@@ -1,81 +1,223 @@
 #include <stdio.h>
 #include <string.h>
-#include <strings.h>   // strcasecmp (Linux)
+#include <strings.h>
 #include "estoque.h"
 
-// FUNÇÕES AUXILIARES
+// LER MOTOS JSON
 
-// Conta quantas linhas (motos) existem no arquivo e volta o cursor para o início
-int contarMotos(FILE *arquivo)
-{
-    if (arquivo == NULL) return 0;
-
-    int contador = 0;
-    char linha[300];
-
-    while (fgets(linha, sizeof(linha), arquivo) != NULL)
-        contador++;
-
-    rewind(arquivo);
-    return contador;
-}
-
-// Lê todas as motos do arquivo para o vetor lista[]
 void lerMotos(FILE *arquivo, struct Moto lista[], int *total)
 {
-    char linha[300];
+    char linha[200];
+
+    char marcaAtual[50] = "";
+
     *total = 0;
 
-    while (fgets(linha, sizeof(linha), arquivo) != NULL)
+    while (fgets(linha, sizeof(linha), arquivo))
     {
-        sscanf(linha, "%d;%49[^;];%49[^;];%d;%f;%d;%d;%d",
-               &lista[*total].id,
-               lista[*total].marca,
-               lista[*total].modelo,
-               &lista[*total].ano,
-               &lista[*total].preco,
-               &lista[*total].disponiveis,
-               &lista[*total].reservadas,
-               &lista[*total].vendidas);
-        (*total)++;
+        // procura marca
+        if (strstr(linha, "{") && strstr(linha, "\""))
+        {
+            char chave[50];
+
+            if (sscanf(linha, " \"%[^\"]\"", chave) == 1)
+            {
+                // ignora atributos internos
+                if (
+                    strcmp(chave, "id") != 0 &&
+                    strcmp(chave, "marca") != 0 &&
+                    strcmp(chave, "ano") != 0 &&
+                    strcmp(chave, "preco") != 0 &&
+                    strcmp(chave, "disponiveis") != 0 &&
+                    strcmp(chave, "reservadas") != 0 &&
+                    strcmp(chave, "vendidas") != 0)
+                {
+                    long pos = ftell(arquivo);
+
+                    char prox[200];
+
+                    if (fgets(prox, sizeof(prox), arquivo))
+                    {
+                        // se próxima linha também tiver {
+                        // então é uma marca
+                        if (strstr(prox, "{"))
+                        {
+                            strcpy(marcaAtual, chave);
+                        }
+                    }
+
+                    fseek(arquivo, pos, SEEK_SET);
+                }
+            }
+        }
+
+        // procura modelo
+        if (strstr(linha, "{") && strstr(linha, "\""))
+        {
+            char modelo[50];
+
+            if (sscanf(linha, " \"%[^\"]\"", modelo) == 1)
+            {
+                if (
+                    strcmp(modelo, "id") != 0 &&
+                    strcmp(modelo, "marca") != 0 &&
+                    strcmp(modelo, "ano") != 0 &&
+                    strcmp(modelo, "preco") != 0 &&
+                    strcmp(modelo, "disponiveis") != 0 &&
+                    strcmp(modelo, "reservadas") != 0 &&
+                    strcmp(modelo, "vendidas") != 0 &&
+                    strcmp(modelo, marcaAtual) != 0)
+                {
+                    struct Moto m;
+
+                    strcpy(m.modelo, modelo);
+
+                    // marca
+                    fgets(linha, sizeof(linha), arquivo);
+                    sscanf(linha, " \"marca\": \"%[^\"]\"", m.marca);
+
+                    // id
+                    fgets(linha, sizeof(linha), arquivo);
+                    sscanf(linha, " \"id\": %d", &m.id);
+
+                    // ano
+                    fgets(linha, sizeof(linha), arquivo);
+                    sscanf(linha, " \"ano\": %d", &m.ano);
+
+                    // preco
+                    fgets(linha, sizeof(linha), arquivo);
+                    sscanf(linha, " \"preco\": %f", &m.preco);
+
+                    // disponiveis
+                    fgets(linha, sizeof(linha), arquivo);
+                    sscanf(linha, " \"disponiveis\": %d", &m.disponiveis);
+
+                    // reservadas
+                    fgets(linha, sizeof(linha), arquivo);
+                    sscanf(linha, " \"reservadas\": %d", &m.reservadas);
+
+                    // vendidas
+                    fgets(linha, sizeof(linha), arquivo);
+                    sscanf(linha, " \"vendidas\": %d", &m.vendidas);
+
+                    lista[*total] = m;
+                    (*total)++;
+                }
+            }
+        }
     }
 }
 
-// Reescreve o arquivo inteiro com o vetor atualizado
+// SALVAR MOTOS JSON
+
 void salvarMotos(struct Moto lista[], int total)
 {
-    FILE *arquivo = fopen("estoque/motos.txt", "w");
-    if (arquivo == NULL)
+    FILE *f = fopen("estoque/motos.json", "w");
+
+    if (f == NULL)
     {
-        printf("ERRO ao salvar estoque!\n");
+        printf("Erro ao salvar motos.json\n");
         return;
     }
 
+    fprintf(f, "{\n");
+
     for (int i = 0; i < total; i++)
     {
-        fprintf(arquivo, "%d;%s;%s;%d;%.2f;%d;%d;%d\n",
-                lista[i].id,
-                lista[i].marca,
-                lista[i].modelo,
-                lista[i].ano,
-                lista[i].preco,
-                lista[i].disponiveis,
-                lista[i].reservadas,
-                lista[i].vendidas);
+        int marcaExiste = 0;
+
+        for (int j = 0; j < i; j++)
+        {
+            if (strcmp(lista[i].marca, lista[j].marca) == 0)
+            {
+                marcaExiste = 1;
+                break;
+            }
+        }
+
+        if (!marcaExiste)
+        {
+            fprintf(f, "  \"%s\": {\n", lista[i].marca);
+
+            int primeiraMoto = 1;
+
+            for (int j = 0; j < total; j++)
+            {
+                if (strcmp(lista[i].marca, lista[j].marca) == 0)
+                {
+                    if (!primeiraMoto)
+                        fprintf(f, ",\n");
+
+                    fprintf(f,
+                            "    \"%s\": {\n"
+                            "      \"marca\": \"%s\",\n"
+                            "      \"id\": %d,\n"
+                            "      \"ano\": %d,\n"
+                            "      \"preco\": %.2f,\n"
+                            "      \"disponiveis\": %d,\n"
+                            "      \"reservadas\": %d,\n"
+                            "      \"vendidas\": %d\n"
+                            "    }",
+                            lista[j].modelo,
+                            lista[j].marca,
+                            lista[j].id,
+                            lista[j].ano,
+                            lista[j].preco,
+                            lista[j].disponiveis,
+                            lista[j].reservadas,
+                            lista[j].vendidas);
+
+                    primeiraMoto = 0;
+                }
+            }
+
+            fprintf(f, "\n  }");
+
+            int outraMarca = 0;
+
+            for (int k = i + 1; k < total; k++)
+            {
+                int repetida = 0;
+
+                for (int z = 0; z <= i; z++)
+                {
+                    if (strcmp(lista[k].marca, lista[z].marca) == 0)
+                    {
+                        repetida = 1;
+                        break;
+                    }
+                }
+
+                if (!repetida)
+                {
+                    outraMarca = 1;
+                    break;
+                }
+            }
+
+            if (outraMarca)
+                fprintf(f, ",");
+
+            fprintf(f, "\n");
+        }
     }
 
-    fclose(arquivo);
+    fprintf(f, "}\n");
+
+    fclose(f);
+
+    printf("motos.json salvo com sucesso!\n");
 }
 
 // CADASTRAR MOTO
-// Se já existe moto com mesma marca + modelo + ano, apenas incrementa o estoque
+
 void cadastrarMoto()
 {
     struct Moto lista[200];
     int total = 0;
 
-    // Carrega estoque atual (se existir)
-    FILE *arquivo = fopen("estoque/motos.txt", "r");
+    FILE *arquivo = fopen("estoque/motos.json", "r");
+
     if (arquivo != NULL)
     {
         lerMotos(arquivo, lista, &total);
@@ -83,59 +225,76 @@ void cadastrarMoto()
     }
 
     struct Moto nova;
+
     printf("\n----- CADASTRAR MOTO -----\n");
-    printf("Marca     : "); scanf(" %[^\n]", nova.marca);
-    printf("Modelo    : "); scanf(" %[^\n]", nova.modelo);
-    printf("Ano       : "); scanf("%d", &nova.ano);
-    printf("Preco (R$): "); scanf("%f", &nova.preco);
+
+    printf("Marca     : ");
+    scanf(" %[^\n]", nova.marca);
+
+    printf("Modelo    : ");
+    scanf(" %[^\n]", nova.modelo);
+
+    printf("Ano       : ");
+    scanf("%d", &nova.ano);
+
+    printf("Preco (R$): ");
+    scanf("%f", &nova.preco);
 
     int quantidade;
-    printf("Quantidade: "); scanf("%d", &quantidade);
 
-    // Verifica se já existe uma entrada com mesma marca, modelo e ano
+    printf("Quantidade: ");
+    scanf("%d", &quantidade);
+
+    // verifica duplicidade
     for (int i = 0; i < total; i++)
     {
-        if (strcasecmp(lista[i].marca,  nova.marca)  == 0 &&
+        if (
+            strcasecmp(lista[i].marca, nova.marca) == 0 &&
             strcasecmp(lista[i].modelo, nova.modelo) == 0 &&
             lista[i].ano == nova.ano)
         {
             lista[i].disponiveis += quantidade;
+
             salvarMotos(lista, total);
 
-            printf("\nMoto ja existe no sistema! Estoque atualizado.\n");
-            printf("ID %d | %s %s %d | Disponiveis: %d\n",
-                   lista[i].id, lista[i].marca, lista[i].modelo,
-                   lista[i].ano, lista[i].disponiveis);
+            printf("\nMoto ja existe! Estoque atualizado.\n");
+
             return;
         }
     }
 
-    // Moto nova — gera ID sequencial
-    nova.id          = (total > 0) ? lista[total - 1].id + 1 : 1;
+    nova.id = (total > 0) ? lista[total - 1].id + 1 : 1;
+
     nova.disponiveis = quantidade;
-    nova.reservadas  = 0;
-    nova.vendidas    = 0;
+    nova.reservadas = 0;
+    nova.vendidas = 0;
 
     lista[total] = nova;
     total++;
 
     salvarMotos(lista, total);
-    printf("\nMoto cadastrada com sucesso! ID: %d\n", nova.id);
+
+    printf("\nMoto cadastrada com sucesso!\n");
 }
 
-// LISTAR MOTOS — exibe todas com seus contadores
+// LISTAR MOTOS
+
 void listarMotos()
 {
-    FILE *arquivo = fopen("estoque/motos.txt", "r");
+    FILE *arquivo = fopen("estoque/motos.json", "r");
+
     if (arquivo == NULL)
     {
-        printf("\nNenhuma moto cadastrada ainda.\n");
+        printf("\nNenhuma moto cadastrada.\n");
         return;
     }
 
     struct Moto lista[200];
+
     int total = 0;
+
     lerMotos(arquivo, lista, &total);
+
     fclose(arquivo);
 
     if (total == 0)
@@ -146,6 +305,7 @@ void listarMotos()
 
     printf("\n%-4s %-15s %-15s %-6s %-12s %-5s %-5s %-5s\n",
            "ID", "Marca", "Modelo", "Ano", "Preco", "Disp", "Res", "Vend");
+
     printf("-------------------------------------------------------------------\n");
 
     for (int i = 0; i < total; i++)
@@ -162,188 +322,171 @@ void listarMotos()
     }
 }
 
-// RESERVAR MOTO — decrementa disponiveis, incrementa reservadas
+// RESERVAR MOTO
+
 void reservarMoto()
 {
-    FILE *arquivo = fopen("estoque/motos.txt", "r");
+    FILE *arquivo = fopen("estoque/motos.json", "r");
+
     if (arquivo == NULL)
     {
-        printf("\nNenhuma moto cadastrada ainda.\n");
+        printf("\nNenhuma moto cadastrada.\n");
         return;
     }
 
     struct Moto lista[200];
+
     int total = 0;
+
     lerMotos(arquivo, lista, &total);
+
     fclose(arquivo);
 
-    printf("\n--- MOTOS DISPONIVEIS ---\n");
-    int temDisponivel = 0;
-    for (int i = 0; i < total; i++)
-    {
-        if (lista[i].disponiveis > 0)
-        {
-            printf("ID: %-4d | %-15s %-15s %d | R$%.2f | Disp: %d\n",
-                   lista[i].id, lista[i].marca, lista[i].modelo,
-                   lista[i].ano, lista[i].preco, lista[i].disponiveis);
-            temDisponivel = 1;
-        }
-    }
+    int id, quantidade;
 
-    if (!temDisponivel)
-    {
-        printf("Nenhuma moto disponivel no momento.\n");
-        return;
-    }
-
-    int id;
-    int quantidade;
-    printf("\nDigite o ID da moto para reservar: ");
+    printf("\nDigite o ID da moto: ");
     scanf("%d", &id);
-    printf("\nDigite a quantidade que deseja reservar: ");
-    scanf("%d", &quantidade);
 
+    printf("Quantidade: ");
+    scanf("%d", &quantidade);
 
     for (int i = 0; i < total; i++)
     {
         if (lista[i].id == id)
         {
-            if (lista[i].disponiveis == 0)
+            if (quantidade > lista[i].disponiveis)
             {
-                printf("Sem unidades disponiveis para esse modelo.\n");
+                printf("Quantidade indisponivel.\n");
                 return;
             }
+
             lista[i].disponiveis -= quantidade;
             lista[i].reservadas += quantidade;
+
             salvarMotos(lista, total);
-            printf("Moto ID %d reservada com sucesso!\n", id);
+
+            printf("Reserva realizada.\n");
+
             return;
         }
     }
 
-    printf("ID %d nao encontrado.\n", id);
+    printf("ID nao encontrado.\n");
 }
 
-// CANCELAR RESERVA — decrementa reservadas, devolve para disponiveis
+// CANCELAR RESERVA
+
 void cancelarReserva()
 {
-    FILE *arquivo = fopen("estoque/motos.txt", "r");
+    FILE *arquivo = fopen("estoque/motos.json", "r");
+
     if (arquivo == NULL)
     {
-        printf("\nNenhuma moto cadastrada ainda.\n");
+        printf("\nNenhuma moto cadastrada.\n");
         return;
     }
 
     struct Moto lista[200];
+
     int total = 0;
+
     lerMotos(arquivo, lista, &total);
+
     fclose(arquivo);
 
-    printf("\n--- MOTOS RESERVADAS ---\n");
-    int temReservada = 0;
-    for (int i = 0; i < total; i++)
-    {
-        if (lista[i].reservadas > 0)
-        {
-            printf("ID: %-4d | %-15s %-15s %d | Reservadas: %d\n",
-                   lista[i].id, lista[i].marca, lista[i].modelo,
-                   lista[i].ano, lista[i].reservadas);
-            temReservada = 1;
-        }
-    }
+    int id, quantidade;
 
-    if (!temReservada)
-    {
-        printf("Nenhuma moto reservada no momento.\n");
-        return;
-    }
-
-    int id;
-    int quantidade;
-    printf("\nDigite o ID da moto para cancelar a reserva: ");
+    printf("\nDigite o ID da moto: ");
     scanf("%d", &id);
-    printf("\nDigite a quantidade de motos que terão a reserva cancelada: ");
+
+    printf("Quantidade: ");
     scanf("%d", &quantidade);
 
     for (int i = 0; i < total; i++)
     {
         if (lista[i].id == id)
         {
-            if (lista[i].reservadas == 0)
+            if (quantidade > lista[i].reservadas)
             {
-                printf("Essa moto nao possui reservas.\n");
+                printf("Quantidade reservada insuficiente.\n");
                 return;
             }
+
             lista[i].reservadas -= quantidade;
             lista[i].disponiveis += quantidade;
+
             salvarMotos(lista, total);
-            printf("Reserva cancelada. Moto ID %d voltou para disponivel.\n", id);
+
+            printf("Reserva cancelada.\n");
+
             return;
         }
     }
 
-    printf("ID %d nao encontrado.\n", id);
+    printf("ID nao encontrado.\n");
 }
 
-// REGISTRAR VENDA — decrementa reservadas, incrementa vendidas
-// Fluxo obrigatório: reservar → vender
+// REGISTRAR VENDA
+
 void registrarVendaMoto()
 {
-    FILE *arquivo = fopen("estoque/motos.txt", "r");
+    FILE *arquivo = fopen("estoque/motos.json", "r");
+
     if (arquivo == NULL)
     {
-        printf("\nNenhuma moto cadastrada ainda.\n");
+        printf("\nNenhuma moto cadastrada.\n");
         return;
     }
 
-    struct Moto lista[200];
+    struct Moto lista[200];// ======================================================
+// ======================================================
+// ======================================================
+// ======================================================
+// ======================================================
+// ======================================================
+// ======================================================
+// ======================================================
+// ======================================================
+// ======================================================
+// ======================================================
+// ======================================================
+// ======================================================
+// ======================================================
+
     int total = 0;
+
     lerMotos(arquivo, lista, &total);
+
     fclose(arquivo);
 
-    printf("\n--- MOTOS PRONTAS PARA VENDA (reservadas) ---\n");
-    int temReservada = 0;
-    for (int i = 0; i < total; i++)
-    {
-        if (lista[i].reservadas > 0)
-        {
-            printf("ID: %-4d | %-15s %-15s %d | R$%.2f | Reservadas: %d\n",
-                   lista[i].id, lista[i].marca, lista[i].modelo,
-                   lista[i].ano, lista[i].preco, lista[i].reservadas);
-            temReservada = 1;
-        }
-    }
+    int id, quantidade;
 
-    if (!temReservada)
-    {
-        printf("Nenhuma moto reservada. Reserve uma moto antes de vender.\n");
-        return;
-    }
-
-    int id;
-    int quantidade;
-    printf("\nDigite o ID da moto para venda: ");
+    printf("\nDigite o ID da moto: ");
     scanf("%d", &id);
-    printf("\nDigite a quantidade de motos que serão vendidas: ");
+
+    printf("Quantidade vendida: ");
     scanf("%d", &quantidade);
 
     for (int i = 0; i < total; i++)
     {
         if (lista[i].id == id)
         {
-            if (lista[i].reservadas == 0)
+            if (quantidade > lista[i].reservadas)
             {
-                printf("Sem reservas para esse modelo. Use a opcao Reservar primeiro.\n");
+                printf("Quantidade reservada insuficiente.\n");
                 return;
             }
-            lista[i].reservadas-=quantidade;
-            lista[i].vendidas+=quantidade;
+
+            lista[i].reservadas -= quantidade;
+            lista[i].vendidas += quantidade;
+
             salvarMotos(lista, total);
-            printf("Venda da moto ID %d registrada com sucesso!\n", id);
-            printf("Total vendido desse modelo: %d unidade(s).\n", lista[i].vendidas);
+
+            printf("Venda registrada.\n");
+
             return;
         }
     }
 
-    printf("ID %d nao encontrado.\n", id);
+    printf("ID nao encontrado.\n");
 }

@@ -168,7 +168,7 @@ static void copiarArquivo(const char *origem, const char *destino)
 // CRIAR BACKUP
 // Salva os arquivos numa subpasta com o nome da loja dentro de backup/
 // Exemplo: backup/MOTO FAST/config.json
-//                           motos.txt
+//                           motos.json
 void criarBackup()
 {
     char nomeLoja[100];
@@ -187,14 +187,14 @@ void criarBackup()
     // Monta os caminhos completos dos arquivos de destino
     char destConfig[350], destMotos[350];
     snprintf(destConfig, sizeof(destConfig), "%s/config.json", caminhoPasta);
-    snprintf(destMotos,  sizeof(destMotos),  "%s/motos.txt",   caminhoPasta);
+    snprintf(destMotos,  sizeof(destMotos),  "%s/motos.json",   caminhoPasta);
 
     printf("\n----- CRIANDO BACKUP -----\n");
     printf("Loja  : %s\n", nomeLoja);
     printf("Pasta : %s\n\n", caminhoPasta);
 
     copiarArquivo("config/config.json", destConfig);
-    copiarArquivo("estoque/motos.txt",  destMotos);
+    copiarArquivo("estoque/motos.json",  destMotos);
 
     printf("\nBackup concluido!\n");
 }
@@ -259,11 +259,11 @@ void restaurarBackup()
 
     char origemConfig[400], origemMotos[400];
     snprintf(origemConfig, sizeof(origemConfig), "%s/config.json", caminhoPasta);
-    snprintf(origemMotos,  sizeof(origemMotos),  "%s/motos.txt",   caminhoPasta);
+    snprintf(origemMotos,  sizeof(origemMotos),  "%s/motos.json",   caminhoPasta);
 
     printf("\nRestaurando backup de '%s'...\n\n", lojas[escolha - 1]);
     copiarArquivo(origemConfig, "config/config.json");
-    copiarArquivo(origemMotos,  "estoque/motos.txt");
+    copiarArquivo(origemMotos,  "estoque/motos.json");
 
     printf("\nBackup restaurado com sucesso!\n");
     printf("Reinicie o sistema para aplicar as configuracoes.\n");
