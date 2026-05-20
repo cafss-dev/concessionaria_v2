@@ -1,0 +1,11 @@
+# Executável gerado pelo compilador
+concessionaria
+
+# Logs gerados em tempo de execução
+logs/
+
+# Pasta de backup manual 
+backup/
+
+# Arquivos de objeto gerados na compilação
+*.o
