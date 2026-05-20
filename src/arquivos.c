@@ -32,7 +32,7 @@ void criarEstruturaPastas() {
 // Extrai o valor de "nome" do config.json
 void lerNomeLoja(char *saida, int tamanho)
 {
-    FILE *f = fopen("config/config.json", "r");
+    FILE *f = fopen("data/config/config.json", "r");
     if (f == NULL)
     {
         snprintf(saida, tamanho, "SEM CONFIGURACAO");
@@ -81,7 +81,7 @@ void gerarConfigJson()
     printf("Nome do gerente        : "); scanf(" %[^\n]", gerente);
     printf("Log ativo? (1=sim 0=nao): "); scanf("%d", &logAtivo);
 
-    FILE *f = fopen("config/config.json", "w");
+    FILE *f = fopen("data/config/config.json", "w");
     if (f == NULL)
     {
         printf("Erro ao criar config.json!\n");
@@ -102,7 +102,7 @@ void gerarConfigJson()
 // MOSTRAR CONFIG.JSON
 void mostrarConfigJson()
 {
-    FILE *f = fopen("config/config.json", "r");
+    FILE *f = fopen("data/config/config.json", "r");
     if (f == NULL)
     {
         printf("\nconfig.json nao encontrado. Use a opcao 6 para gerar.\n");
@@ -120,7 +120,7 @@ void mostrarConfigJson()
 // logEstaAtivo — verifica se "logAtivo" é 1 no config.json
 int logEstaAtivo()
 {
-    FILE *f = fopen("config/config.json", "r");
+    FILE *f = fopen("data/config/config.json", "r");
     if (f == NULL) return 0;
 
     char linha[200];
@@ -203,7 +203,7 @@ void criarBackup()
     printf("Loja  : %s\n", nomeLoja);
     printf("Pasta : %s\n\n", caminhoPasta);
 
-    copiarArquivo("config/config.json", destConfig);
+    copiarArquivo("data/config/config.json", destConfig);
     copiarArquivo("data/estoque/motos.json",  destMotos);
 
     printf("\nBackup concluido!\n");
@@ -211,7 +211,7 @@ void criarBackup()
 
 // RESTAURAR BACKUP
 // Lista as pastas dentro de data/backup/, o usuário escolhe qual restaurar
-// e os arquivos são copiados de volta para config/ e data/estoque/
+// e os arquivos são copiados de volta para data/config/ e data/estoque/
 void restaurarBackup()
 {
     DIR *dir = opendir("backup");
@@ -272,7 +272,7 @@ void restaurarBackup()
     snprintf(origemMotos,  sizeof(origemMotos),  "%s/motos.json",   caminhoPasta);
 
     printf("\nRestaurando backup de '%s'...\n\n", lojas[escolha - 1]);
-    copiarArquivo(origemConfig, "config/config.json");
+    copiarArquivo(origemConfig, "data/config/config.json");
     copiarArquivo(origemMotos,  "data/estoque/motos.json");
 
     printf("\nBackup restaurado com sucesso!\n");

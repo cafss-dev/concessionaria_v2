@@ -1,7 +1,7 @@
-# Executável final gerado pelo compilador
+# Executável gerado pelo compilador
 concessionaria
 
-# Pasta com arquivos de logs do sistema
+# Logs
 logs/
 *.log
 
@@ -10,6 +10,5 @@ obj/
 *.o
 *.out
 
-# Arquivos de dados temporários ou locais
-data/estoque/
-data/backup/
+# Pasta de backup manual
+backup/
