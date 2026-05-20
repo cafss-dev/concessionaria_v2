@@ -112,7 +112,7 @@ void lerMotos(FILE *arquivo, struct Moto lista[], int *total)
 
 void salvarMotos(struct Moto lista[], int total)
 {
-    FILE *f = fopen("estoque/motos.json", "w");
+    FILE *f = fopen("data/estoque/motos.json", "w");
 
     if (f == NULL)
     {
@@ -216,7 +216,7 @@ void cadastrarMoto()
     struct Moto lista[200];
     int total = 0;
 
-    FILE *arquivo = fopen("estoque/motos.json", "r");
+    FILE *arquivo = fopen("data/estoque/motos.json", "r");
 
     if (arquivo != NULL)
     {
@@ -281,7 +281,7 @@ void cadastrarMoto()
 
 void listarMotos()
 {
-    FILE *arquivo = fopen("estoque/motos.json", "r");
+    FILE *arquivo = fopen("data/estoque/motos.json", "r");
 
     if (arquivo == NULL)
     {
@@ -326,7 +326,7 @@ void listarMotos()
 
 void reservarMoto()
 {
-    FILE *arquivo = fopen("estoque/motos.json", "r");
+    FILE *arquivo = fopen("data/estoque/motos.json", "r");
 
     if (arquivo == NULL)
     {
@@ -378,7 +378,7 @@ void reservarMoto()
 
 void cancelarReserva()
 {
-    FILE *arquivo = fopen("estoque/motos.json", "r");
+    FILE *arquivo = fopen("data/estoque/motos.json", "r");
 
     if (arquivo == NULL)
     {
@@ -430,7 +430,7 @@ void cancelarReserva()
 
 void registrarVendaMoto()
 {
-    FILE *arquivo = fopen("estoque/motos.json", "r");
+    FILE *arquivo = fopen("data/estoque/motos.json", "r");
 
     if (arquivo == NULL)
     {

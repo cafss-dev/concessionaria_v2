@@ -1,11 +1,15 @@
-# Executável gerado pelo compilador
+# Executável final gerado pelo compilador
 concessionaria
 
-# Logs gerados em tempo de execução
+# Pasta com arquivos de logs do sistema
 logs/
+*.log
 
-# Pasta de backup manual 
-backup/
-
-# Arquivos de objeto gerados na compilação
+# Arquivos de objeto e temporários da compilação
+obj/
 *.o
+*.out
+
+# Arquivos de dados temporários ou locais
+data/estoque/
+data/backup/

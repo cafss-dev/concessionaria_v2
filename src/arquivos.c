@@ -6,17 +6,27 @@
 #include "arquivos.h"
 
 // CRIAR ESTRUTURA DE PASTAS
-void criarEstruturaPastas()
-{
-    char *pastas[] = {"estoque", "logs", "backup", "config"};
-    int total = 4;
+void criarEstruturaPastas() {
+    // Cria as pastas que ficam diretamente na raiz do projeto
+    char *pastasRaiz[] = {"src", "logs", "include", "data", "config"};
+    int totalRaiz = 4; 
 
-    for (int i = 0; i < total; i++)
-    {
-        if (mkdir(pastas[i], 0777) == 0)
-            printf("  [OK] Pasta '%s' criada.\n", pastas[i]);
+    for (int i = 0; i < totalRaiz; i++) {
+        if (mkdir(pastasRaiz[i], 0777) == 0) {
+            printf(" [OK] Pasta raiz '%s' criada.\n", pastasRaiz[i]);
+        }
+    }
+    // Cria as subpastas que precisam ficar obrigatoriamente dentro de 'data/'
+    char *subPastasData[] = {"data/estoque", "data/backup"};
+    int totalSub = 2;
+
+    for (int i = 0; i < totalSub; i++) {
+        if (mkdir(subPastasData[i], 0777) == 0) {
+            printf(" [OK] Subpasta '%s' criada.\n", subPastasData[i]);
+        }
     }
 }
+
 
 // LER NOME DA LOJA
 // Extrai o valor de "nome" do config.json
@@ -166,8 +176,8 @@ static void copiarArquivo(const char *origem, const char *destino)
 }
 
 // CRIAR BACKUP
-// Salva os arquivos numa subpasta com o nome da loja dentro de backup/
-// Exemplo: backup/MOTO FAST/config.json
+// Salva os arquivos numa subpasta com o nome da loja dentro de data/backup/
+// Exemplo: data/backup/MOTO FAST/config.json
 //                           motos.json
 void criarBackup()
 {
@@ -176,7 +186,7 @@ void criarBackup()
 
     // Monta o caminho da pasta de backup desta loja
     char caminhoPasta[250];
-    snprintf(caminhoPasta, sizeof(caminhoPasta), "backup/%s", nomeLoja);
+    snprintf(caminhoPasta, sizeof(caminhoPasta), "data/backup/%s", nomeLoja);
 
     // Cria a subpasta se não existir
     if (mkdir(caminhoPasta, 0777) == -1)
@@ -194,20 +204,20 @@ void criarBackup()
     printf("Pasta : %s\n\n", caminhoPasta);
 
     copiarArquivo("config/config.json", destConfig);
-    copiarArquivo("estoque/motos.json",  destMotos);
+    copiarArquivo("data/estoque/motos.json",  destMotos);
 
     printf("\nBackup concluido!\n");
 }
 
 // RESTAURAR BACKUP
-// Lista as pastas dentro de backup/, o usuário escolhe qual restaurar
-// e os arquivos são copiados de volta para config/ e estoque/
+// Lista as pastas dentro de data/backup/, o usuário escolhe qual restaurar
+// e os arquivos são copiados de volta para config/ e data/estoque/
 void restaurarBackup()
 {
     DIR *dir = opendir("backup");
     if (dir == NULL)
     {
-        printf("\nPasta backup/ nao encontrada.\n");
+        printf("\nPasta data/backup/ nao encontrada.\n");
         return;
     }
 
@@ -225,7 +235,7 @@ void restaurarBackup()
 
         // Verifica se é realmente uma pasta usando stat()
         char caminho[300];
-        snprintf(caminho, sizeof(caminho), "backup/%s", entrada->d_name);
+        snprintf(caminho, sizeof(caminho), "data/backup/%s", entrada->d_name);
 
         struct stat st;
         if (stat(caminho, &st) == 0 && S_ISDIR(st.st_mode))
@@ -255,7 +265,7 @@ void restaurarBackup()
     }
 
     char caminhoPasta[300];
-    snprintf(caminhoPasta, sizeof(caminhoPasta), "backup/%s", lojas[escolha - 1]);
+    snprintf(caminhoPasta, sizeof(caminhoPasta), "data/backup/%s", lojas[escolha - 1]);
 
     char origemConfig[400], origemMotos[400];
     snprintf(origemConfig, sizeof(origemConfig), "%s/config.json", caminhoPasta);
@@ -263,7 +273,7 @@ void restaurarBackup()
 
     printf("\nRestaurando backup de '%s'...\n\n", lojas[escolha - 1]);
     copiarArquivo(origemConfig, "config/config.json");
-    copiarArquivo(origemMotos,  "estoque/motos.json");
+    copiarArquivo(origemMotos,  "data/estoque/motos.json");
 
     printf("\nBackup restaurado com sucesso!\n");
     printf("Reinicie o sistema para aplicar as configuracoes.\n");
