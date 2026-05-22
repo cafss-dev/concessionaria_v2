@@ -3,8 +3,13 @@
 - Faz Cadastramento, Reserva e Registro de Venda dos veículos automotivos da concessionária
 - Projeto feito para trabalho universitário
 
+## Requisitos
+- GCC: `sudo apt install gcc`
+- Make: `sudo apt install make`
+
 ## Como compilar
 Para compilar é necessário ter o **GCC** e o **Make** instalados.
+
 ## Como executar
 - Clonar o Projeto Localmente
 ```
