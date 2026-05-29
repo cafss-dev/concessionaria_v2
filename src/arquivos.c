@@ -9,7 +9,7 @@
 void criarEstruturaPastas() {
     // Cria as pastas que ficam diretamente na raiz do projeto
     char *pastasRaiz[] = {"src", "logs", "include", "data", "config"};
-    int totalRaiz = 4; 
+    int totalRaiz = 5; 
 
     for (int i = 0; i < totalRaiz; i++) {
         if (mkdir(pastasRaiz[i], 0777) == 0) {
